@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="MW Translate - Retro-future language & code terminal">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MW Translate">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>MW Translate ⚡</title>
+    <style>
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --gold:#d4af37; --gold2:#f0cc55;
+            --bg:#111111;   --bg2:#1a1a1a; --bg3:#222222;
+            --green:#00ff88; --cyan:#00e5ff; --red:#ff4444;
+            --dim:#555; --text:#c8ffd4; --border:#2a2a2a;
+        }
+        body {
+            font-family:'Courier New',monospace;
+            background:var(--bg); color:var(--text);
+            height:100dvh; width:100vw;
+            overflow:hidden; display:flex; flex-direction:column;
+        }
+        /* HEADER */
+        #header {
+            background:linear-gradient(90deg,#1a1a1a,#242424,#1a1a1a);
+            border-bottom:2px solid var(--gold);
+            padding:7px 12px;
+            display:flex; align-items:center; justify-content:space-between;
+            flex-shrink:0;
+            box-shadow:0 2px 20px rgba(212,175,55,.2);
+        }
+        #header h1 { font-size:clamp(.9em,3vw,1.25em); color:var(--gold); letter-spacing:3px; text-shadow:0 0 10px var(--gold); }
+        .sub { font-size:.65em; color:var(--dim); letter-spacing:1px; }
+        /* TABS */
+        #tabs { display:flex; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+        .tab-btn {
+            flex:1; padding:9px 4px;
+            background:none; border:none; border-bottom:3px solid transparent;
+            color:var(--dim); font-family:inherit; font-size:.75em;
+            letter-spacing:1px; cursor:pointer; transition:all .2s;
+        }
+        .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); text-shadow:0 0 8px var(--gold); }
+        .tab-btn:hover:not(.active) { color:var(--text); }
+        /* PAGES */
+        #pages { flex:1; overflow:hidden; position:relative; }
+        .page { display:none; flex-direction:column; height:100%; padding:8px; gap:7px; overflow:hidden; }
+        .page.active { display:flex; }
+        /* PANEL */
+        .panel { border:1px solid var(--border); background:var(--bg2); display:flex; flex-direction:column; border-radius:3px; overflow:hidden; }
+        .panel-hdr {
+            background:rgba(212,175,55,.1); color:var(--gold);
+            padding:6px 10px; font-size:.73em; letter-spacing:2px;
+            border-bottom:1px solid var(--border);
+            display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+        }
+        .panel-body { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+        /* LANG ROW */
+        .lang-row {
+            display:flex; align-items:center; gap:5px;
+            padding:6px 8px; background:var(--bg3);
+            border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap;
+        }
+        .lang-row label { font-size:.68em; color:var(--dim); letter-spacing:1px; }
+        select {
+            background:var(--bg2); color:var(--gold);
+            border:1px solid var(--dim); padding:4px 6px;
+            font-family:inherit; font-size:.76em; border-radius:2px; outline:none;
+        }
+        select:focus { border-color:var(--gold); }
+        /* API SOURCE BADGE */
+        .api-badge {
+            font-size:.65em; padding:2px 7px; border-radius:2px;
+            border:1px solid var(--dim); color:var(--dim); letter-spacing:1px;
+            cursor:pointer; transition:all .2s; white-space:nowrap;
+        }
+        .api-badge.google  { border-color:#4285f4; color:#4285f4; }
+        .api-badge.mymemory{ border-color:#2ecc71; color:#2ecc71; }
+        .api-badge.offline { border-color:var(--dim); color:var(--dim); }
+        /* TEXTAREA */
+        textarea {
+            flex:1; background:var(--bg); color:var(--green);
+            border:none; padding:10px; font-family:inherit;
+            font-size:.88em; resize:none; outline:none; width:100%;
+        }
+        textarea::placeholder { color:var(--dim); }
+        /* OUTPUT */
+        .output-area {
+            flex:1; overflow-y:auto; padding:10px;
+            font-size:.84em; line-height:1.7;
+            white-space:pre-wrap; word-break:break-word;
+            color:var(--text); background:var(--bg); min-height:60px;
+        }
+        .output-area::-webkit-scrollbar { width:3px; }
+        .output-area::-webkit-scrollbar-thumb { background:var(--border); }
+        /* SPLIT */
+        .split { display:flex; gap:7px; flex:1; min-height:0; }
+        .split .panel { flex:1; min-height:0; }
+        @media (max-width:480px) { .split { flex-direction:column; } }
+        /* BUTTONS */
+        .btn-row { display:flex; gap:5px; flex-wrap:wrap; flex-shrink:0; }
+        button.btn {
+            padding:8px 13px; background:rgba(212,175,55,.13);
+            border:1px solid var(--gold); color:var(--gold);
+            cursor:pointer; font-family:inherit; font-size:.78em;
+            letter-spacing:1px; transition:all .2s; border-radius:2px;
+        }
+        button.btn:hover:not(:disabled) { background:rgba(212,175,55,.3); box-shadow:0 0 10px rgba(212,175,55,.35); }
+        button.btn:active:not(:disabled) { transform:scale(.97); }
+        button.btn:disabled { opacity:.35; cursor:not-allowed; }
+        button.btn.primary { background:rgba(212,175,55,.25); font-weight:bold; }
+        button.btn.accent  { border-color:var(--cyan); color:var(--cyan); background:rgba(0,229,255,.08); }
+        button.btn.danger  { border-color:var(--red);  color:var(--red);  background:rgba(255,68,68,.08); }
+        /* COPY */
+        .copy-btn {
+            padding:2px 7px; font-size:.7em; background:none;
+            border:1px solid var(--dim); color:var(--dim);
+            cursor:pointer; font-family:inherit; border-radius:2px; transition:all .2s;
+        }
+        .copy-btn:hover { border-color:var(--gold); color:var(--gold); }
+        /* SWAP */
+        .swap-btn {
+            padding:4px 9px; font-size:.8em;
+            background:rgba(212,175,55,.12); border:1px solid var(--gold);
+            color:var(--gold); cursor:pointer; font-family:inherit; border-radius:2px;
+        }
+        /* STATUS */
+        #statusBar {
+            padding:5px 12px; font-size:.72em; letter-spacing:1px;
+            border-top:1px solid var(--border); text-align:center;
+            flex-shrink:0; transition:all .3s;
+            min-height:28px; display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        #statusBar.ready  { color:var(--green); border-top-color:var(--green); }
+        #statusBar.error  { color:var(--red);   border-top-color:var(--red);   }
+        #statusBar.loading{ color:var(--gold);  border-top-color:var(--gold);  }
+        /* SPINNER */
+        .spinner { display:inline-block; width:11px; height:11px; border:2px solid rgba(212,175,55,.25); border-top-color:var(--gold); border-radius:50%; animation:spin .6s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        /* CHAR COUNT */
+        .char-count { font-size:.67em; color:var(--dim); }
+        /* RESULT STYLES */
+        .r-hdr { color:var(--gold); font-weight:bold; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px; }
+        .r-row { margin:3px 0; }
+        .r-lbl { color:var(--dim); }
+        .r-val { color:var(--cyan); }
+        .r-div { border-top:1px solid var(--border); margin:8px 0; }
+        .r-text { color:var(--green); line-height:1.8; }
+        .r-warn { color:var(--red); white-space:pre-wrap; }
+        .r-tip  { color:var(--cyan); white-space:pre-wrap; }
+        /* DEBUG */
+        .dbg-table { width:100%; border-collapse:collapse; font-size:.8em; }
+        .dbg-table td { padding:6px 10px; border-bottom:1px solid var(--border); }
+        .dbg-table td:first-child { color:var(--dim); width:42%; }
+        .dbg-table td:last-child  { color:var(--cyan); word-break:break-all; }
+        .v-ok  { color:var(--green) !important; }
+        .v-err { color:var(--red)   !important; }
+        /* LOG */
+        #logPanel { background:var(--bg); font-size:.76em; padding:8px; overflow-y:auto; flex:1; }
+        .log-line { line-height:1.6; }
+        .log-line.ok   { color:var(--green); }
+        .log-line.warn { color:var(--gold);  }
+        .log-line.err  { color:var(--red);   }
+        .log-line.info { color:var(--cyan);  }
+        /* API SELECTOR */
+        .api-row {
+            display:flex; align-items:center; gap:6px;
+            padding:5px 8px; background:var(--bg3);
+            border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap;
+        }
+        .api-row label { font-size:.68em; color:var(--dim); }
+        .api-opt {
+            padding:3px 9px; font-size:.7em; border-radius:2px;
+            border:1px solid var(--border); color:var(--dim);
+            cursor:pointer; transition:all .2s; background:none; font-family:inherit;
+        }
+        .api-opt.active { border-color:var(--gold); color:var(--gold); background:rgba(212,175,55,.15); }
+        .api-note { font-size:.65em; color:var(--dim); margin-left:auto; }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div>
+        <h1>⚡ MW TRANSLATE</h1>
+        <div class="sub">Free · No API Key Required</div>
+    </div>
+    <div style="text-align:right">
+        <div class="sub">v2.1.0</div>
+        <div class="sub" id="hdrPlatform">—</div>
+    </div>
+</div>
+
+<div id="tabs">
+    <button class="tab-btn active" data-tab="translate">🌐 TRANSLATE</button>
+    <button class="tab-btn" data-tab="code">💻 CODE</button>
+    <button class="tab-btn" data-tab="debug">🐛 DEBUG</button>
+</div>
+
+<div id="pages">
+
+    <!-- ══ TRANSLATE ══ -->
+    <div class="page active" id="page-translate">
+
+        <!-- API Source selector -->
+        <div class="api-row">
+            <label>ENGINE:</label>
+            <button class="api-opt active" data-api="google">Google (Free)</button>
+            <button class="api-opt" data-api="mymemory">MyMemory (Free)</button>
+            <span class="api-note" id="apiNote">ไม่ต้อง API key</span>
+        </div>
+
+        <!-- Language selectors -->
+        <div class="panel" style="flex-shrink:0;">
+            <div class="lang-row">
+                <label>FROM:</label>
+                <select id="langFrom">
+                    <option value="auto">อัตโนมัติ</option>
+                    <option value="th">ไทย</option>
+                    <option value="en">English</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="ar">العربية</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="ms">Melayu</option>
+                </select>
+                <button class="swap-btn" id="swapBtn">⇄</button>
+                <label>TO:</label>
+                <select id="langTo">
+                    <option value="th">ไทย</option>
+                    <option value="en" selected>English</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="es">Español</option>
+                    <option value="ru">Русский</option>
+                    <option value="ar">العربية</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="ms">Melayu</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Input / Output -->
+        <div class="split">
+            <div class="panel">
+                <div class="panel-hdr">
+                    📝 INPUT
+                    <span class="char-count" id="charCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <textarea id="inputText" placeholder="พิมพ์หรือวางข้อความที่ต้องการแปล...&#10;Type or paste text to translate..."></textarea>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-hdr">
+                    📤 OUTPUT
+                    <button class="copy-btn" id="copyTransBtn">COPY</button>
+                </div>
+                <div class="panel-body">
+                    <div class="output-area" id="outputBox"><span style="color:var(--dim)">ผลแปลจะแสดงที่นี่…</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn primary" id="translateBtn">▶ TRANSLATE</button>
+            <button class="btn" id="detectBtn">🔍 DETECT</button>
+            <button class="btn" id="clearTransBtn" style="margin-left:auto">✕ CLEAR</button>
+        </div>
+    </div>
+
+    <!-- ══ CODE ══ -->
+    <div class="page" id="page-code">
+        <div class="panel" style="flex:1;min-height:0">
+            <div class="panel-hdr">
+                💻 CODE INPUT
+                <span class="char-count" id="codeCharCount">0</span>
+            </div>
+            <div class="panel-body">
+                <textarea id="codeInput" placeholder="วางโค้ดที่ต้องการวิเคราะห์...&#10;Paste code to analyze...&#10;&#10;JS / Python / PHP / Java / HTML / CSS / SQL..."></textarea>
+            </div>
+        </div>
+        <div class="panel" style="flex:1.3;min-height:0">
+            <div class="panel-hdr">
+                📊 RESULT
+                <button class="copy-btn" id="copyCodeBtn">COPY</button>
+            </div>
+            <div class="panel-body">
+                <div class="output-area" id="codeBox"><span style="color:var(--dim)">ผลวิเคราะห์จะแสดงที่นี่…</span></div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn primary" id="analyzeBtn">▶ ANALYZE</button>
+            <button class="btn accent" id="formatBtn">✦ FORMAT</button>
+            <button class="btn" id="clearCodeBtn" style="margin-left:auto">✕ CLEAR</button>
+        </div>
+    </div>
+
+    <!-- ══ DEBUG ══ -->
+    <div class="page" id="page-debug">
+        <div class="panel" style="flex-shrink:0">
+            <div class="panel-hdr">🔧 DIAGNOSTICS</div>
+            <div class="panel-body" style="overflow:auto;max-height:200px">
+                <table class="dbg-table">
+                    <tr><td>Platform</td><td id="dbPlatform">—</td></tr>
+                    <tr><td>Online</td><td id="dbOnline">—</td></tr>
+                    <tr><td>Service Worker</td><td id="dbSW">—</td></tr>
+                    <tr><td>Cache API</td><td id="dbCache">—</td></tr>
+                    <tr><td>localStorage</td><td id="dbStorage">—</td></tr>
+                    <tr><td>Active Engine</td><td id="dbEngine">—</td></tr>
+                    <tr><td>Translate Count</td><td id="dbTC">0</td></tr>
+                    <tr><td>Analyze Count</td><td id="dbAC">0</td></tr>
+                    <tr><td>Last Error</td><td id="dbLastErr" style="color:var(--red)">—</td></tr>
+                    <tr><td>Screen</td><td id="dbScreen">—</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="panel" style="flex:1;min-height:0">
+            <div class="panel-hdr">
+                📋 LOG
+                <button class="copy-btn" id="clearLogBtn">CLEAR</button>
+            </div>
+            <div class="panel-body">
+                <div id="logPanel"></div>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn" id="refreshDiagBtn">🔄 REFRESH</button>
+            <button class="btn" id="testApiBtn">🧪 TEST API</button>
+            <button class="btn danger" id="clearCacheBtn">🗑 CACHE</button>
+        </div>
+    </div>
+</div>
+
+<div id="statusBar" class="ready">🟢 READY — Free translation, no API key needed</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  MW TRANSLATE v2.1.0
+//  Engine: Google Translate (free) + MyMemory fallback
+//  No API key required
+// ══════════════════════════════════════════════
+const App = (() => {
+
+    // ── State ──
+    const S = {
+        engine: 'google',   // 'google' | 'mymemory'
+        tc: 0, ac: 0,
+        lastErr: '—',
+        sessionStart: new Date()
+    };
+
+    // ── Persist ──
+    function load() {
+        try { S.tc = +localStorage.getItem('mw_tc')||0; S.ac = +localStorage.getItem('mw_ac')||0; } catch(e){}
+    }
+    function save() {
+        try { localStorage.setItem('mw_tc', S.tc); localStorage.setItem('mw_ac', S.ac); } catch(e){}
+    }
+
+    // ── Log ──
+    function log(msg, type='info') {
+        const p = document.getElementById('logPanel');
+        if (!p) return;
+        const t = new Date().toLocaleTimeString('th-TH',{hour12:false});
+        const d = document.createElement('div');
+        d.className = `log-line ${type}`;
+        d.textContent = `[${t}] ${msg}`;
+        p.appendChild(d);
+        p.scrollTop = p.scrollHeight;
+    }
+
+    // ── Status ──
+    function status(msg, cls='ready') {
+        const el = document.getElementById('statusBar');
+        el.className = cls;
+        el.innerHTML = msg;
+    }
+
+    // ── HTML escape ──
+    function esc(s) {
+        return String(s||'')
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ══════════════════════════════════════
+    //  TRANSLATE ENGINES
+    // ══════════════════════════════════════
+
+    // Google Translate (unofficial, free, no key)
+    async function googleTranslate(text, from, to) {
+        const sl = from === 'auto' ? 'auto' : from;
+        const params = new URLSearchParams({
+            client: 'gtx', sl, tl: to, dt: 't', q: text
+        });
+        const url = `https://translate.googleapis.com/translate_a/single?${params}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Google ${resp.status}`);
+        const data = await resp.json();
+        // data[0] = array of [translated, original, ...]
+        const translated = data[0].map(chunk => chunk[0] || '').join('');
+        // detected language
+        const detected = data[2] || sl;
+        return { translated, detected };
+    }
+
+    // MyMemory Free (no key, 5000 chars/day)
+    async function myMemoryTranslate(text, from, to) {
+        const sl = from === 'auto' ? '' : from;
+        const pair = sl ? `${sl}|${to}` : `en|${to}`;
+        const params = new URLSearchParams({ q: text, langpair: pair });
+        const url = `https://api.mymemory.translated.net/get?${params}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`MyMemory ${resp.status}`);
+        const data = await resp.json();
+        if (data.responseStatus !== 200) throw new Error(data.responseDetails || 'MyMemory error');
+        const translated = data.responseData.translatedText;
+        return { translated, detected: sl || 'auto' };
+    }
+
+    // Auto fallback: try primary engine, fallback to the other
+    async function translate(text, from, to) {
+        const engines = S.engine === 'google'
+            ? [['google', googleTranslate], ['mymemory', myMemoryTranslate]]
+            : [['mymemory', myMemoryTranslate], ['google', googleTranslate]];
+
+        let lastErr = null;
+        for (const [name, fn] of engines) {
+            try {
+                log(`Trying ${name}…`, 'info');
+                const result = await fn(text, from, to);
+                log(`${name} OK ✓`, 'ok');
+                return { ...result, engine: name };
+            } catch(e) {
+                log(`${name} failed: ${e.message}`, 'warn');
+                lastErr = e;
+            }
+        }
+        throw lastErr || new Error('All engines failed');
+    }
+
+    // ══════════════════════════════════════
+    //  DETECT LANGUAGE (Google)
+    // ══════════════════════════════════════
+    async function detectLanguage(text) {
+        const params = new URLSearchParams({ client:'gtx', sl:'auto', tl:'en', dt:'t', q: text.slice(0,200) });
+        const url = `https://translate.googleapis.com/translate_a/single?${params}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Google ${resp.status}`);
+        const data = await resp.json();
+        return data[2] || 'unknown'; // detected lang code
+    }
+
+    // ══════════════════════════════════════
+    //  CODE ANALYSIS (local, no API)
+    // ══════════════════════════════════════
+    function analyzeCodeLocal(code) {
+        const lines = code.split('\n');
+        const lineCount = lines.length;
+        const nonEmpty = lines.filter(l => l.trim()).length;
+
+        // Detect language
+        let lang = 'Unknown';
+        if (/^\s*<(!DOCTYPE|html|head|body)/im.test(code)) lang = 'HTML';
+        else if (/^\s*\{[\s\S]*\}$/.test(code.trim()) && code.includes('"')) lang = 'JSON';
+        else if (/def\s+\w+\s*\(|import\s+\w+|print\s*\(/.test(code)) lang = 'Python';
+        else if (/<\?php/.test(code)) lang = 'PHP';
+        else if (/SELECT|INSERT|UPDATE|DELETE|CREATE TABLE/i.test(code)) lang = 'SQL';
+        else if (/func\s+\w+|println!|let mut/.test(code)) lang = 'Rust/Go';
+        else if (/^\s*(import|export|const|let|var|function|class|=>)/m.test(code)) lang = 'JavaScript';
+        else if (/public\s+class|System\.out|@Override/.test(code)) lang = 'Java';
+        else if (/#include|std::|cout/.test(code)) lang = 'C/C++';
+        else if (/using System|namespace\s+\w+|\.cs/.test(code)) lang = 'C#';
+        else if (/^\s*[a-z\-]+\s*\{/m.test(code) && code.includes(':')) lang = 'CSS';
+
+        // Count functions
+        const fnPatterns = [
+            /\bfunction\s+\w+\s*\(/g,
+            /\w+\s*=\s*(?:async\s*)?\(.*?\)\s*=>/g,
+            /\bdef\s+\w+\s*\(/g,
+            /\bfunc\s+\w+\s*\(/g,
+            /public\s+\w+\s+\w+\s*\(/g,
+        ];
+        let fnCount = 0;
+        fnPatterns.forEach(p => { const m = code.match(p); if(m) fnCount += m.length; });
+
+        // Issues detection
+        const issues = [];
+        if (/console\.log\(/.test(code))      issues.push('มี console.log() ที่ควรลบก่อน production');
+        if (/TODO|FIXME|HACK/i.test(code))    issues.push('มี TODO/FIXME comments ค้างอยู่');
+        if (/password|passwd|secret/i.test(code)) issues.push('⚠ อาจมี sensitive data ใน code');
+        if (/eval\s*\(/.test(code))            issues.push('⚠ ใช้ eval() — ควรหลีกเลี่ยง (security risk)');
+        if (lineCount > 200)                   issues.push(`ไฟล์ยาว ${lineCount} บรรทัด — ควรแบ่ง module`);
+        if (/var\s+/.test(code) && lang.includes('JS')) issues.push('ใช้ var — แนะนำเปลี่ยนเป็น let/const');
+
+        // Suggestions
+        const suggestions = [];
+        if (!/{.*comment|\/\//i.test(code) && fnCount > 0) suggestions.push('เพิ่ม comment อธิบาย function');
+        if (fnCount === 0 && lineCount > 20)  suggestions.push('แบ่ง code เป็น function เพื่อ reuse');
+        if (lang === 'JavaScript')             suggestions.push('ใช้ strict mode: "use strict"');
+        if (lang === 'Python')                 suggestions.push('เพิ่ม type hints เช่น def fn(x: int) -> str');
+        if (suggestions.length === 0)          suggestions.push('โค้ดดูโอเค ✓');
+
+        // Complexity estimate
+        const ifCount  = (code.match(/\bif\b/g)||[]).length;
+        const forCount = (code.match(/\bfor\b|\bwhile\b/g)||[]).length;
+        const complexity = (ifCount + forCount) > 10 ? 'High' : (ifCount + forCount) > 4 ? 'Medium' : 'Low';
+
+        return { lang, lineCount, nonEmpty, fnCount, issues, suggestions, complexity, ifCount, forCount };
+    }
+
+    // ══════════════════════════════════════
+    //  FORMAT CODE (local)
+    // ══════════════════════════════════════
+    function formatCode(code) {
+        // Basic indent normalizer
+        let indent = 0;
+        const OPEN  = /[\{\[\(]$/;
+        const CLOSE = /^[\}\]\)]/;
+        return code.split('\n').map(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return '';
+            if (CLOSE.test(trimmed)) indent = Math.max(0, indent - 1);
+            const result = '  '.repeat(indent) + trimmed;
+            if (OPEN.test(trimmed)) indent++;
+            return result;
+        }).join('\n');
+    }
+
+    // ══════════════════════════════════════
+    //  UI ACTIONS
+    // ══════════════════════════════════════
+    async function doTranslate() {
+        const text = document.getElementById('inputText').value.trim();
+        if (!text) { status('⚠ กรุณาใส่ข้อความก่อน', 'error'); return; }
+
+        const from = document.getElementById('langFrom').value;
+        const to   = document.getElementById('langTo').value;
+        if (from !== 'auto' && from === to) {
+            status('⚠ ภาษาต้นทางและปลายทางเหมือนกัน', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('translateBtn');
+        btn.disabled = true;
+        status('<span class="spinner"></span> กำลังแปล…', 'loading');
+        log(`Translate: "${text.slice(0,30)}…" [${from}→${to}]`, 'info');
+
+        try {
+            const { translated, detected, engine } = await translate(text, from, to);
+
+            const engineLabel = engine === 'google' ? '🔵 Google (free)' : '🟢 MyMemory (free)';
+            const detectedLabel = from === 'auto' ? ` (detected: ${detected})` : '';
+
+            document.getElementById('outputBox').innerHTML =
+`<div class="r-hdr">═══ TRANSLATION ═══</div>
+<div class="r-row"><span class="r-lbl">Engine : </span><span class="r-val">${engineLabel}</span></div>
+<div class="r-row"><span class="r-lbl">From   : </span><span class="r-val">${esc(from)}${esc(detectedLabel)}</span></div>
+<div class="r-row"><span class="r-lbl">To     : </span><span class="r-val">${esc(to)}</span></div>
+<div class="r-row"><span class="r-lbl">Chars  : </span><span class="r-val">${text.length} → ${translated.length}</span></div>
+<div class="r-div"></div>
+<div class="r-text">${esc(translated)}</div>`;
+
+            S.tc++;
+            save();
+            syncDebugCounters();
+            status(`🟢 แปลเสร็จ | via ${engine}`, 'ready');
+            log(`OK: "${translated.slice(0,40)}…"`, 'ok');
+        } catch(e) {
+            S.lastErr = e.message;
+            document.getElementById('outputBox').innerHTML =
+                `<span style="color:var(--red)">ERROR: ${esc(e.message)}\n\nลองเปลี่ยน Engine หรือตรวจสอบ internet</span>`;
+            status('🔴 แปลไม่สำเร็จ — ตรวจสอบ internet', 'error');
+            log(`ERROR: ${e.message}`, 'err');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function doDetect() {
+        const text = document.getElementById('inputText').value.trim();
+        if (!text) { status('⚠ กรุณาใส่ข้อความก่อน', 'error'); return; }
+
+        const btn = document.getElementById('detectBtn');
+        btn.disabled = true;
+        status('<span class="spinner"></span> กำลังตรวจสอบภาษา…', 'loading');
+        log('Detecting language…', 'info');
+
+        try {
+            const detected = await detectLanguage(text);
+            const NAMES = { th:'Thai ไทย', en:'English', zh:'Chinese 中文', 'zh-CN':'Chinese 中文',
+                ja:'Japanese 日本語', ko:'Korean 한국어', fr:'French', de:'German',
+                es:'Spanish', ru:'Russian', ar:'Arabic', vi:'Vietnamese', ms:'Malay', auto:'Auto' };
+
+            document.getElementById('outputBox').innerHTML =
+`<div class="r-hdr">═══ LANGUAGE DETECTED ═══</div>
+<div class="r-row"><span class="r-lbl">Language : </span><span class="r-val">${esc(NAMES[detected]||detected)}</span></div>
+<div class="r-row"><span class="r-lbl">Code     : </span><span class="r-val">${esc(detected)}</span></div>
+<div class="r-div"></div>
+<div style="color:var(--dim);font-size:.9em">ข้อความตัวอย่าง: "${esc(text.slice(0,60))}"</div>`;
+
+            // Auto-select in dropdown
+            const sel = document.getElementById('langFrom');
+            if (sel.querySelector(`option[value="${detected}"]`)) sel.value = detected;
+
+            status(`🟢 ตรวจพบ: ${NAMES[detected]||detected}`, 'ready');
+            log(`Detected: ${detected}`, 'ok');
+        } catch(e) {
+            S.lastErr = e.message;
+            status('🔴 ตรวจสอบไม่สำเร็จ', 'error');
+            log(`Detect ERROR: ${e.message}`, 'err');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function doAnalyze() {
+        const code = document.getElementById('codeInput').value.trim();
+        if (!code) { status('⚠ กรุณาวางโค้ดก่อน', 'error'); return; }
+
+        status('<span class="spinner"></span> วิเคราะห์โค้ด…', 'loading');
+        log(`Analyze: ${code.length} chars`, 'info');
+
+        // Local analysis (no API needed)
+        setTimeout(() => {
+            try {
+                const r = analyzeCodeLocal(code);
+                const issueHtml = r.issues.map(i=>`• ${i}`).join('\n') || '• ไม่พบปัญหา ✓';
+                const tipHtml   = r.suggestions.map(s=>`• ${s}`).join('\n');
+
+                document.getElementById('codeBox').innerHTML =
+`<div class="r-hdr">═══ CODE ANALYSIS ═══</div>
+<div class="r-row"><span class="r-lbl">Language   : </span><span class="r-val">${esc(r.lang)}</span></div>
+<div class="r-row"><span class="r-lbl">Lines      : </span><span class="r-val">${r.lineCount} (${r.nonEmpty} non-empty)</span></div>
+<div class="r-row"><span class="r-lbl">Functions  : </span><span class="r-val">${r.fnCount}</span></div>
+<div class="r-row"><span class="r-lbl">Complexity : </span><span class="r-val">${r.complexity} (if:${r.ifCount} loop:${r.forCount})</span></div>
+<div class="r-div"></div>
+<div style="color:var(--gold);margin-bottom:4px">⚠ ISSUES (${r.issues.length})</div>
+<div class="r-warn">${esc(issueHtml)}</div>
+<div class="r-div"></div>
+<div style="color:var(--gold);margin-bottom:4px">💡 SUGGESTIONS</div>
+<div class="r-tip">${esc(tipHtml)}</div>
+<div class="r-div"></div>
+<div style="color:var(--dim);font-size:.85em">⚡ Local analysis — ไม่ต้อง internet</div>`;
+
+                S.ac++;
+                save();
+                syncDebugCounters();
+                status('🟢 วิเคราะห์เสร็จ | Local (no internet needed)', 'ready');
+                log(`Analyze OK: ${r.lang}, ${r.lineCount} lines, ${r.fnCount} fns`, 'ok');
+            } catch(e) {
+                status('🔴 วิเคราะห์ไม่สำเร็จ', 'error');
+                log(`Analyze ERROR: ${e.message}`, 'err');
+            }
+        }, 100);
+    }
+
+    function doFormat() {
+        const code = document.getElementById('codeInput').value.trim();
+        if (!code) { status('⚠ กรุณาวางโค้ดก่อน', 'error'); return; }
+        const formatted = formatCode(code);
+        document.getElementById('codeInput').value = formatted;
+        document.getElementById('codeCharCount').textContent = formatted.length;
+        status('🟢 จัด Format เรียบร้อย', 'ready');
+        log('Format applied', 'ok');
+    }
+
+    // ══════════════════════════════════════
+    //  DIAGNOSTICS
+    // ══════════════════════════════════════
+    async function refreshDiag() {
+        const ua = navigator.userAgent;
+        let plat = 'Web';
+        if (/Android/i.test(ua)) plat = '📱 Android';
+        else if (/iPhone|iPad/i.test(ua)) plat = '📱 iOS';
+        else if (/Windows/i.test(ua)) plat = '🖥 Windows';
+        else if (/Mac/i.test(ua)) plat = '🖥 macOS';
+        else if (/Linux/i.test(ua)) plat = '🖥 Linux';
+        setD('dbPlatform', plat);
+        setD('dbOnline', navigator.onLine ? '🟢 Online' : '🔴 Offline', navigator.onLine?'v-ok':'v-err');
+        setD('dbScreen', `${screen.width}×${screen.height}`);
+        setD('dbEngine', S.engine === 'google' ? '🔵 Google (free)' : '🟢 MyMemory (free)');
+        try { localStorage.setItem('t','1'); localStorage.removeItem('t'); setD('dbStorage','✓ OK','v-ok'); }
+        catch(e) { setD('dbStorage','✗ Unavailable','v-err'); }
+
+        if ('caches' in window) {
+            const keys = await caches.keys().catch(()=>[]);
+            setD('dbCache', `✓ ${keys.length} cache(s)`, 'v-ok');
+        } else { setD('dbCache', '✗ N/A', 'v-err'); }
+
+        if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration().catch(()=>null);
+            setD('dbSW', reg ? `✓ ${reg.active?'active':'waiting'}` : '⚠ Not registered', reg?'v-ok':'');
+        } else { setD('dbSW','✗ N/A','v-err'); }
+
+        syncDebugCounters();
+        setD('dbLastErr', S.lastErr, S.lastErr==='—'?'':'v-err');
+        log('Diagnostics refreshed', 'info');
+    }
+
+    function setD(id, val, cls) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = val;
+        el.className = cls || '';
+    }
+    function syncDebugCounters() {
+        setD('dbTC', String(S.tc));
+        setD('dbAC', String(S.ac));
+    }
+
+    // ══════════════════════════════════════
+    //  COPY
+    // ══════════════════════════════════════
+    async function copyEl(id) {
+        const text = document.getElementById(id).textContent;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;opacity:0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        status('📋 คัดลอกแล้ว', 'ready');
+        log('Copied to clipboard', 'ok');
+    }
+
+    // ══════════════════════════════════════
+    //  TEST API (diagnostic)
+    // ══════════════════════════════════════
+    async function testApi() {
+        status('<span class="spinner"></span> กำลังทดสอบ API…', 'loading');
+        log('Testing APIs…', 'info');
+
+        const tests = [
+            { name:'Google (free)', fn: () => googleTranslate('hello', 'en', 'th') },
+            { name:'MyMemory (free)', fn: () => myMemoryTranslate('hello', 'en', 'th') },
+        ];
+
+        for (const t of tests) {
+            try {
+                const r = await t.fn();
+                log(`✓ ${t.name}: "${r.translated}"`, 'ok');
+            } catch(e) {
+                log(`✗ ${t.name}: ${e.message}`, 'err');
+            }
+        }
+        status('🟢 ทดสอบเสร็จ — ดูผลใน LOG', 'ready');
+    }
+
+    // ══════════════════════════════════════
+    //  INIT
+    // ══════════════════════════════════════
+    function init() {
+        load();
+        syncDebugCounters();
+
+        // Platform
+        const ua = navigator.userAgent;
+        let plat = 'Web';
+        if (/Android/i.test(ua)) plat = 'Android';
+        else if (/iPhone|iPad/i.test(ua)) plat = 'iOS';
+        document.getElementById('hdrPlatform').textContent = plat;
+
+        // Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('page-'+btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'debug') refreshDiag();
+            });
+        });
+
+        // API engine selector
+        document.querySelectorAll('.api-opt').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.api-opt').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                S.engine = btn.dataset.api;
+                const notes = {
+                    google:'Google Translate • ไม่ต้อง key • แปลได้หลายภาษา',
+                    mymemory:'MyMemory • ไม่ต้อง key • 5000 chars/day'
+                };
+                document.getElementById('apiNote').textContent = notes[S.engine]||'';
+                log(`Engine switched → ${S.engine}`, 'info');
+                setD('dbEngine', S.engine);
+            });
+        });
+
+        // Translate page
+        document.getElementById('translateBtn').addEventListener('click', doTranslate);
+        document.getElementById('detectBtn').addEventListener('click', doDetect);
+        document.getElementById('swapBtn').addEventListener('click', () => {
+            const f = document.getElementById('langFrom');
+            const t = document.getElementById('langTo');
+            if (f.value !== 'auto') {
+                [f.value, t.value] = [t.value, f.value];
+            }
+            // swap text
+            const inp = document.getElementById('inputText');
+            const out = document.getElementById('outputBox');
+            const outTxt = out.textContent.trim();
+            if (outTxt && !outTxt.includes('ผลแปล') && !outTxt.includes('ERROR')) {
+                inp.value = outTxt;
+                out.innerHTML = '<span style="color:var(--dim)">ผลแปลจะแสดงที่นี่…</span>';
+                document.getElementById('charCount').textContent = outTxt.length;
+            }
+            log(`Swap: ${f.value} ⇄ ${t.value}`, 'info');
+        });
+        document.getElementById('clearTransBtn').addEventListener('click', () => {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputBox').innerHTML = '<span style="color:var(--dim)">ผลแปลจะแสดงที่นี่…</span>';
+            document.getElementById('charCount').textContent = '0';
+            status('🟢 CLEARED', 'ready');
+        });
+        document.getElementById('copyTransBtn').addEventListener('click', () => copyEl('outputBox'));
+        document.getElementById('inputText').addEventListener('input', e => {
+            document.getElementById('charCount').textContent = e.target.value.length;
+        });
+
+        // Code page
+        document.getElementById('analyzeBtn').addEventListener('click', doAnalyze);
+        document.getElementById('formatBtn').addEventListener('click', doFormat);
+        document.getElementById('clearCodeBtn').addEventListener('click', () => {
+            document.getElementById('codeInput').value = '';
+            document.getElementById('codeBox').innerHTML = '<span style="color:var(--dim)">ผลวิเคราะห์จะแสดงที่นี่…</span>';
+            document.getElementById('codeCharCount').textContent = '0';
+            status('🟢 CLEARED', 'ready');
+        });
+        document.getElementById('copyCodeBtn').addEventListener('click', () => copyEl('codeBox'));
+        document.getElementById('codeInput').addEventListener('input', e => {
+            document.getElementById('codeCharCount').textContent = e.target.value.length;
+        });
+
+        // Debug page
+        document.getElementById('refreshDiagBtn').addEventListener('click', refreshDiag);
+        document.getElementById('clearLogBtn').addEventListener('click', () => {
+            document.getElementById('logPanel').innerHTML = '';
+        });
+        document.getElementById('testApiBtn').addEventListener('click', testApi);
+        document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+            if (!('caches' in window)) { log('Cache API not supported', 'warn'); return; }
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k=>caches.delete(k)));
+            log(`Cleared ${keys.length} cache(s)`, 'ok');
+            status('🟢 Cache cleared', 'ready');
+            refreshDiag();
+        });
+
+        // Network events
+        window.addEventListener('online',  () => { status('🟢 กลับมาออนไลน์','ready'); log('Network: online','ok'); });
+        window.addEventListener('offline', () => { status('🔴 ออฟไลน์ — Code analyze ยังใช้ได้','error'); log('Network: offline','warn'); });
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(r => log(`SW registered: ${r.scope}`, 'ok'))
+                .catch(e => log(`SW failed: ${e.message}`, 'warn'));
+        }
+
+        status('🟢 READY — Free translation, no API key needed', 'ready');
+        log('MW Translate v2.1.0 ready', 'ok');
+        log('Engines: Google (free) + MyMemory fallback', 'info');
+    }
+
+    return { init };
+})();
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
