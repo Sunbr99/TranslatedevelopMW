@@ -24,13 +24,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # กดยอมรับ SDK Licenses ของระบบ Ubuntu Runner โดยตรง (ไม่ต้องใช้ setup-android)
       - name: Accept Android SDK Licenses
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install dependencies
         run: npm ci || npm install
+
+      # คัดลอกไฟล์เว็บไปไว้ในโฟลเดอร์ www เพื่อรองรับ Capacitor
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p www
+          cp -r index.html favicon.ico icon-*.png manifest.json service-worker.js server.js setup-https.* push-*.sh www/ 2>/dev/null || true
 
       - name: Add Android Platform if missing
         run: |
