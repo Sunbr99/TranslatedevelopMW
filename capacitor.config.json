@@ -1,7 +1,7 @@
 {
   "appId": "com.mwtranslate.app",
   "appName": "MW Translate",
-  "webDir": "dist",
+  "webDir": ".",
   "server": {
     "androidScheme": "https",
     "cleartext": false
