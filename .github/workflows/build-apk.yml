@@ -24,12 +24,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
+      # กดยอมรับ SDK Licenses ของระบบ Ubuntu Runner โดยตรง (ไม่ต้องใช้ setup-android)
       - name: Accept Android SDK Licenses
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install dependencies
         run: npm ci || npm install
